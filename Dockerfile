@@ -4,11 +4,13 @@ FROM ghcr.io/linuxserver/baseimage-alpine-nginx:3.22
 
 ARG BUILD_DATE
 ARG VERSION
-ARG SPEEDTEST_TRACKER_VERSION
 LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="thespad"
 
 ENV HOME=/config
+
+# Copy local speedtest-tracker source instead of downloading from GitHub
+COPY speedtest-tracker/ /app/www/
 
 RUN \
   apk add --no-cache \
@@ -43,17 +45,6 @@ RUN \
   if ! grep -qxF 'clear_env = no' /etc/php84/php-fpm.d/www.conf; then echo 'clear_env = no' >> /etc/php84/php-fpm.d/www.conf; fi && \
   echo "env[PATH] = /usr/local/bin:/usr/bin:/bin" >> /etc/php84/php-fpm.conf && \
   echo "*** install speedtest-tracker ***" && \
-  if [ -z ${SPEEDTEST_TRACKER_VERSION+x} ]; then \
-    SPEEDTEST_TRACKER_VERSION=$(curl -sX GET "https://api.github.com/repos/alexjustesen/speedtest-tracker/releases/latest" \
-    | awk '/tag_name/{print $4;exit}' FS='[""]'); \
-  fi && \
-  curl -o \
-    /tmp/speedtest-tracker.tar.gz -L \
-    "https://github.com/alexjustesen/speedtest-tracker/archive/${SPEEDTEST_TRACKER_VERSION}.tar.gz" && \
-  mkdir -p /app/www && \
-  tar xzf \
-    /tmp/speedtest-tracker.tar.gz -C \
-    /app/www/ --strip-components=1 && \
   cd /app/www && \
   composer install \
     --no-interaction \
@@ -80,6 +71,6 @@ RUN \
     /app/www/node_modules \
     /tmp/*
 
-COPY root/ /
+COPY docker-speedtest-tracker/root/ /
 
 VOLUME /config

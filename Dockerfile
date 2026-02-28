@@ -16,6 +16,8 @@ RUN \
   apk add --no-cache \
     iputils \
     grep \
+    nodejs \
+    npm \
     php84-gd \
     php84-intl \
     php84-pdo_mysql \
@@ -26,8 +28,8 @@ RUN \
     php84-xmlreader \
     postgresql16-client \
     ssmtp && \
-  apk add --no-cache --virtual=build-dependencies \
-    npm && \
+  echo "*** install fast-cli ***" && \
+  npm install -g fast-cli && \
   echo "*** install speedtest-cli ***" && \
   if [ -z ${CLI_VERSION+x} ]; then \
     CLI_VERSION=$(curl -Ls https://packagecloud.io/ookla/speedtest-cli/debian/dists/bookworm/main/binary-amd64/Packages \
@@ -64,7 +66,6 @@ RUN \
   } > /etc/php84/conf.d/php-misc.ini && \
   printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
   echo "**** cleanup ****" && \
-  apk del --purge build-dependencies && \
   rm -rf \
     $HOME/.cache \
     $HOME/.npm \

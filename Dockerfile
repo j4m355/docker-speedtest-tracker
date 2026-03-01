@@ -12,8 +12,16 @@ ENV HOME=/config
 # Copy local speedtest-tracker source instead of downloading from GitHub
 COPY speedtest-tracker/ /app/www/
 
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 RUN \
   apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ttf-freefont \
     iputils \
     grep \
     nodejs \
@@ -46,6 +54,7 @@ RUN \
   sed -E -i 's/^;?clear_env ?=.*$/clear_env = no/g' /etc/php84/php-fpm.d/www.conf && \
   if ! grep -qxF 'clear_env = no' /etc/php84/php-fpm.d/www.conf; then echo 'clear_env = no' >> /etc/php84/php-fpm.d/www.conf; fi && \
   echo "env[PATH] = /usr/local/bin:/usr/bin:/bin" >> /etc/php84/php-fpm.conf && \
+  echo "env[PUPPETEER_EXECUTABLE_PATH] = /usr/bin/chromium-browser" >> /etc/php84/php-fpm.conf && \
   echo "*** install speedtest-tracker ***" && \
   cd /app/www && \
   composer install \
@@ -67,7 +76,6 @@ RUN \
   printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
   echo "**** cleanup ****" && \
   rm -rf \
-    $HOME/.cache \
     $HOME/.npm \
     /app/www/node_modules \
     /tmp/*

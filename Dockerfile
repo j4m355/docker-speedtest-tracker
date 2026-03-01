@@ -12,8 +12,12 @@ ENV HOME=/config
 # Copy local speedtest-tracker source instead of downloading from GitHub
 COPY speedtest-tracker/ /app/www/
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# Puppeteer config: use a cache dir outside /config volume so installed
+# Chrome persists across container recreations.
+COPY docker-speedtest-tracker/.puppeteerrc.cjs /config/.puppeteerrc.cjs
+COPY docker-speedtest-tracker/.puppeteerrc.cjs /app/www/.puppeteerrc.cjs
+
+ENV PUPPETEER_CACHE_DIR=/opt/puppeteer-cache
 
 RUN \
   apk add --no-cache \
@@ -38,6 +42,8 @@ RUN \
     ssmtp && \
   echo "*** install fast-cli ***" && \
   npm install -g fast-cli && \
+  echo "*** install puppeteer chrome into persistent cache ***" && \
+  npx puppeteer browsers install chrome && \
   echo "*** install speedtest-cli ***" && \
   if [ -z ${CLI_VERSION+x} ]; then \
     CLI_VERSION=$(curl -Ls https://packagecloud.io/ookla/speedtest-cli/debian/dists/bookworm/main/binary-amd64/Packages \
@@ -54,7 +60,7 @@ RUN \
   sed -E -i 's/^;?clear_env ?=.*$/clear_env = no/g' /etc/php84/php-fpm.d/www.conf && \
   if ! grep -qxF 'clear_env = no' /etc/php84/php-fpm.d/www.conf; then echo 'clear_env = no' >> /etc/php84/php-fpm.d/www.conf; fi && \
   echo "env[PATH] = /usr/local/bin:/usr/bin:/bin" >> /etc/php84/php-fpm.conf && \
-  echo "env[PUPPETEER_EXECUTABLE_PATH] = /usr/bin/chromium-browser" >> /etc/php84/php-fpm.conf && \
+  echo "env[PUPPETEER_CACHE_DIR] = /opt/puppeteer-cache" >> /etc/php84/php-fpm.conf && \
   echo "*** install speedtest-tracker ***" && \
   cd /app/www && \
   composer install \
